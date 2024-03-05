@@ -1,5 +1,9 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'models/counter_info.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -33,12 +37,26 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   static const counterKey = 'counter';
+  static const counterInfoKey = 'counterInfo';
   int _counter = 0;
 
   @override
   void initState() {
     _initCounter();
+    _printCounterInfo();
     super.initState();
+  }
+
+  Future _printCounterInfo() async {
+    final counterInfo = await _getCounterInfo();
+    
+    if(counterInfo == null) return null;
+
+    print('==========');
+    print('value: ${counterInfo.value}');
+    print('lastUpdate: ${counterInfo.lastUpdate}');
+    print('userName: ${counterInfo.userName}');
+    print('==========');
   }
 
   Future _initCounter() async {
@@ -52,6 +70,7 @@ class _MyHomePageState extends State<MyHomePage> {
     });
 
     await _setCounter();
+    await _setCounterInfo();
   }
 
   Future _setCounter() async {
@@ -59,11 +78,28 @@ class _MyHomePageState extends State<MyHomePage> {
     prefs.setInt(counterKey, _counter);
   }
 
+  Future _setCounterInfo() async {
+    var prefs = await SharedPreferences.getInstance();
+    final counterInfo = CounterInfo(
+      value: _counter,
+      lastUpdate: DateTime.now(),
+      userName: 'Alex',
+    );
+    prefs.setString(counterInfoKey, json.encode(counterInfo));
+  }
+
   Future<int> _getCounter() async {
     var prefs = await SharedPreferences.getInstance();
     return prefs.getInt(counterKey) ?? 0;
   }
-
+  
+  Future<CounterInfo?> _getCounterInfo() async {
+    var prefs = await SharedPreferences.getInstance();
+    final counterInfo = prefs.getString(counterInfoKey);
+    if (counterInfo == null) return null;
+    return CounterInfo.fromJson(json.decode(counterInfo));
+  } 
+  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
